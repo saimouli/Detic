@@ -56,7 +56,8 @@ class VisualizationDemo(object):
             classifier = BUILDIN_CLASSIFIER[args.vocabulary]
 
         num_classes = len(self.metadata.thing_classes)
-        self.cpu_device = torch.device("cpu")
+        self.cpu_device = torch.device(0)
+        print("device: ", self.cpu_device)
         self.instance_mode = instance_mode
 
         self.parallel = parallel
@@ -67,7 +68,7 @@ class VisualizationDemo(object):
             self.predictor = DefaultPredictor(cfg)
         reset_cls_test(self.predictor.model, classifier, num_classes)
 
-    def run_on_image(self, image):
+    def run_on_image(self, image, visualize = False):
         """
         Args:
             image (np.ndarray): an image of shape (H, W, C) (in BGR order).
@@ -82,19 +83,20 @@ class VisualizationDemo(object):
         # Convert image from OpenCV BGR format to Matplotlib RGB format.
         image = image[:, :, ::-1]
         visualizer = Visualizer(image, self.metadata, instance_mode=self.instance_mode)
-        if "panoptic_seg" in predictions:
-            panoptic_seg, segments_info = predictions["panoptic_seg"]
-            vis_output = visualizer.draw_panoptic_seg_predictions(
-                panoptic_seg.to(self.cpu_device), segments_info
-            )
-        else:
-            if "sem_seg" in predictions:
-                vis_output = visualizer.draw_sem_seg(
-                    predictions["sem_seg"].argmax(dim=0).to(self.cpu_device)
+        if visualize: 
+            if "panoptic_seg" in predictions:
+                panoptic_seg, segments_info = predictions["panoptic_seg"]
+                vis_output = visualizer.draw_panoptic_seg_predictions(
+                    panoptic_seg.to(self.cpu_device), segments_info
                 )
-            if "instances" in predictions:
-                instances = predictions["instances"].to(self.cpu_device)
-                vis_output = visualizer.draw_instance_predictions(predictions=instances)
+            else:
+                if "sem_seg" in predictions:
+                    vis_output = visualizer.draw_sem_seg(
+                        predictions["sem_seg"].argmax(dim=0).to(self.cpu_device)
+                    )
+                if "instances" in predictions:
+                    instances = predictions["instances"].to(self.cpu_device)
+                    vis_output = visualizer.draw_instance_predictions(predictions=instances)
 
         return predictions, vis_output
 
